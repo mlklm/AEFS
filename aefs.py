@@ -1,11 +1,13 @@
 __author__ = "mlklm"
 __date__ = "$28 juil. 2015 11:35:31$"
+__HOST__ = '0.0.0.0'
+__PORT__ = 1977
 
+from metafile import metafile
+from myfile import myfile
 from simplecrypt import decrypt
 from simplecrypt import encrypt
 from urllib.parse import urlparse
-from myfile import myfile
-
 import cgi
 import codecs
 import http.server
@@ -15,8 +17,6 @@ import random
 import re
 import time
 import uuid
-
-PORT = 1977
 
 class MyHandler(http.server.BaseHTTPRequestHandler):
     
@@ -42,34 +42,22 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
             
         # filemeta
         dfilemeta = {}
+        mf = metafile()
         if 'burnafterreading' in form:
-            dfilemeta["burafterreading"] = 1
+            mf.set_burnafterreading(1)
         dfilemeta["uploaddate"] = int(time.time())    
         if 'expiration' in form:    
-            if(form['expiration'].value == "hour"):
-                dfilemeta["expiration"] = dfilemeta["uploaddate"] + 3600
-            if(form['expiration'].value == "day"):
-                dfilemeta["expiration"] = dfilemeta["uploaddate"] + 864000
-            if(form['expiration'].value == "week"):
-                dfilemeta["expiration"] = dfilemeta["uploaddate"] + 6048000
-            if(form['expiration'].value == "month"):
-                dfilemeta["expiration"] = dfilemeta["uploaddate"] + 25920000
-            if(form['expiration'].value == "year"):
-                dfilemeta["expiration"] = dfilemeta["uploaddate"] + 31536000
-            if(form['expiration'].value == "never"):
-                dfilemeta["expiration"] = -1
+            mf.set_expiration(form['expiration'].value)
         
-        dfilemeta["uploaddate"] = int(time.time())
-        jsonfilemeta = json.dumps(dfilemeta)
         # make keys
         key = ''.join([random.choice('0123456789ABCDEF') for x in range(16)])
         pp = form['passphrase'].value
         # bytes
         file = encrypt((key + pp), form['fileToUpload'].value)
         # write file
-        ofile  = myfile()
-        ofile.write_("a",fname + ".meta", jsonfilemeta)
-        ofile.write_("ab",fname, file)
+        ofile = myfile()
+        ofile.write_("a", fname + ".meta", mf.get_json_metafile())
+        ofile.write_("ab", fname, file)
         # send response
         data = {}
         data['uri'] = self.make_url(fname, key)
@@ -89,7 +77,6 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
 
         if len(dluri) >= 2:
             filename = dluri[1]
-            print(filename)
             # split prams
             qs = re.split('&', request.query)
             # unique key
@@ -99,22 +86,21 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
             try:
                 # open file
                 ofile  = myfile()
-                meta = ofile.read_("r",filename + ".meta")
-                dmeta = json.loads(meta)
-
-                if time.time() > dmeta["expiration"]:
+                meta = ofile.read_("r", filename + ".meta")
+                mf = metafile(meta)
+                
+                if mf.is_date_valid():
                     content = self.load_assets("error.html")
                     content = content.read() 
                     ofile.delete(filename)
                     ofile.delete(filename + ".meta")
                 else: 
                     # decript
-                    bin = ofile.read_("rb",filename)
+                    bin = ofile.read_("rb", filename)
                     content = decrypt((key + pp), bin)
-                    # send binary
                     self.isBin = True
 
-                if "burafterreading" in dmeta:
+                if  mf.is_burafterreadingable():
                     ofile.delete(filename)
                     ofile.delete(filename + ".meta")
 
@@ -163,13 +149,14 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
     
     def make_url(self, fname, key):
         clt_adress, inport = self.client_address
-        port = str(PORT)
-        return "http://" + clt_adress + ":" +port+ "/dl/" + fname + "?" + key + "&"
+        port = str(__PORT__)
+        return "http://" + clt_adress + ":" + port + "/dl/" + fname + "?" + key + "&"
         
 if __name__ == '__main__':
     try:
-        server = http.server.HTTPServer(('', PORT), MyHandler)
-        print('Started http server on port : ', PORT)
+        server = http.server.HTTPServer((__HOST__, __PORT__), MyHandler)
+        print('Started http server')
+        print('Listen on ',__HOST__,':',__PORT__)
         server.serve_forever()
     except KeyboardInterrupt:
         print('^C received, shutting down server')
