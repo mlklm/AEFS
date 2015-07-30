@@ -1,0 +1,46 @@
+html,body{
+    height: 100%;
+    width: 100%;
+    font-family : Arial;
+    color :white;
+    background:black;
+    line-height: 1.5;
+    overflow: hidden
+}
+a{
+    color: red;
+}
+hr{
+    margin: 50px 45% 50px 45%;
+}
+input{
+    margin:5px;
+}
+.main{
+    height: auto !important;
+    height: 100%;
+    width: 40%;
+    margin:  50px 30% -60px ;
+    text-align: center;
+}
+.header{
+    height: auto !important;
+    height: 100%;
+    margin:  10px;
+    text-align: center;
+    position : fixed;
+    top:0px;
+    left:0px;
+}
+.passblock{
+}
+.footer {
+    width: 40%;
+    position:fixed;
+    left:30%;
+    bottom: 0px;
+    text-align: center;
+}
+.footer p{
+    margin-left: 5px
+}

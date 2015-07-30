@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <link rel="stylesheet" type="text/css" href="css/reset.css">
+        <link rel="stylesheet" type="text/css" href="css/main.css">
+        <title>EFS</title>
+    </head>
+    <body>
+        <div class="header">
+            <img width="300" src="../img/mlklm-monsecure.png" />
+            <h1>Encrypt file sharing</h1>
+        </div>
+        <div class="main">
+            <div class="wrapper">
+                <form action="share.html" method="post" enctype="multipart/form-data">
+                    Select a file to upload: <br/>
+                    <input type="file" name="fileToUpload" id="fileToUpload">
+                    <hr class="dot">
+                    <div>
+                        Set the default duration (1 month) ?<br/><br/>
+                        <input type="checkbox" id="burnafterreading" name="burnafterreading" />
+                        <label for="burnafterreading">Burn after reading</label>
+                        <br/><b>OR</b><br/>
+                        <select id="pasteExpiration" name="expiration">
+                            <option value="hour">1 hour</option>
+                            <option value="day">1 day</option>
+                            <option value="week">1 week</option>
+                            <option value="month" selected="selected">1 month</option>
+                            <option value="year">1 year</option>
+                            <option value="never">Never</option>
+                        </select>
+                        <label for="expiration"> to live</label>
+                    </div>
+                    <hr class="dot">
+                    <div class="passblock">
+                        May be you want add a passphrases ?<br/>
+                        <i>Keep blank if you don't want to use a passphrase</i><br><br/>
+                        <input type="password" name="passphrase" id="passphrase" placeholder="Passsphrases"><br/>
+                        <input type="password" name="passphrase2" id="passphrase2" placeholder="Confirm"><br/>
+                    </div>
+                    <hr class="dot">
+
+                    <input type="submit" value="Send file" name="submit">
+                </form>
+            </div>
+        </div>
+        <div class="footer">
+            <p> <a target="_blank" href="http://mlklm.net/">mlklm.net</a> | This is free and unencumbered software released into the <a target="_blank" href="http://unlicense.org/">public domain</a>.</p>
+        </div>
+    </body>
+</html>
