@@ -174,8 +174,9 @@ if __name__ == '__main__':
         def worker():
             while True:
                 item = q.get()
+                print(__VERBOSE__+'Startserve_forever')
                 server.serve_forever()
-                q.task_done()
+                #q.task_done()
 
         # Create the queue and thread pool.
         q = Queue()
