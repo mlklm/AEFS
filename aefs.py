@@ -166,38 +166,25 @@ if __name__ == '__main__':
         server = http.server.HTTPServer((__HOST__, __PORT__), AEFS)
         print(__VERBOSE__ + 'Started server ...')
         print(__VERBOSE__ + 'Listen on ' + str(__HOST__) + ':' + str(__PORT__))
-
-
-        # lock to serialize console output
         lock = threading.Lock()
-
-        # The worker thread pulls an item from the queue and processes it
         def worker():
             while True:
                 item = q.get()
-                print('Start thread id :'+str(threading.get_ident()))
+                print(__VERBOSE__ + 'Start thread id :'+str(threading.get_ident()))
                 server.serve_forever()
                 q.task_done()
 
-        # Create the queue and thread pool.
         q = Queue()
         for i in range(__THREAD__):
              t = threading.Thread(target=worker)
-             t.daemon = True  # thread dies when main thread (only non-daemon thread) exits.
+             t.daemon = True
              t.start()
 
-        # stuff work items on the queue (in this case, just a number).
-        start = time.perf_counter()
-        for item in range(20):
+        for item in range(__THREAD__):
             q.put(item)
 
-        q.join()       # block until all tasks are done
+        q.join()  
 
-        # "Work" took .1 seconds per task.
-        # 20 tasks serially would be 2 seconds.
-        # With 4 threads should be about .5 seconds (contrived because non-CPU intensive "work")
-        print('time:',time.perf_counter() - start)
-        
     except KeyboardInterrupt:
         print(__VERBOSE__ + '^C received, shutting down server')
         server.socket.close()
