@@ -11,10 +11,11 @@ import http.server
 from metafile import metafile
 import mimetypes
 from myfile import myfile
+from queue import Queue
 import re
-from urllib.parse import urlparse
-
 import threading
+import time
+from urllib.parse import urlparse
 
 
 class AEFS(http.server.BaseHTTPRequestHandler):
@@ -164,16 +165,31 @@ if __name__ == '__main__':
         server = http.server.HTTPServer((__HOST__, __PORT__), AEFS)
         print(__VERBOSE__ + 'Started server ...')
         print(__VERBOSE__ + 'Listen on ' + str(__HOST__) + ':' + str(__PORT__))
-        lock = threading.Lock()
-        def worker():
-            server.serve_forever()
 
+
+        # lock to serialize console output
+        lock = threading.Lock()
+
+        # The worker thread pulls an item from the queue and processes it
+        def worker():
+            while True:
+                item = q.get()
+                server.serve_forever()
+                q.task_done()
+
+        # Create the queue and thread pool.
+        q = Queue()
         for i in range(__THREAD__):
             t = threading.Thread(target=worker)
-            print(__VERBOSE__+"Start : "+t.getName())
-            t.daemon = True
+            print(__VERBOSE__+'Start ' + t.getName())
+            t.daemon = True  # thread dies when main thread (only non-daemon thread) exits.
             t.start()
 
+        # stuff work items on the queue (in this case, just a number).
+        for item in range(__THREAD__):
+            q.put(item)
+
+        q.join()       # block until all tasks are done
 
     except KeyboardInterrupt:
         print(__VERBOSE__ + '^C received, shutting down server')
