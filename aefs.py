@@ -15,8 +15,6 @@ import re
 from urllib.parse import urlparse
 
 import threading
-from queue import Queue
-import time
 
 
 class AEFS(http.server.BaseHTTPRequestHandler):
@@ -168,22 +166,14 @@ if __name__ == '__main__':
         print(__VERBOSE__ + 'Listen on ' + str(__HOST__) + ':' + str(__PORT__))
         lock = threading.Lock()
         def worker():
-            while True:
-                item = q.get()
-                print(__VERBOSE__ + 'Start thread id :'+str(threading.get_ident()))
-                server.serve_forever()
-                q.task_done()
+            server.serve_forever()
 
-        q = Queue()
         for i in range(__THREAD__):
-             t = threading.Thread(target=worker)
-             t.daemon = True
-             t.start()
+            t = threading.Thread(target=worker)
+            print(__VERBOSE__+"Start : "+t.getName())
+            t.daemon = True
+            t.start()
 
-        for item in range(__THREAD__):
-            q.put(item)
-
-        q.join()  
 
     except KeyboardInterrupt:
         print(__VERBOSE__ + '^C received, shutting down server')
