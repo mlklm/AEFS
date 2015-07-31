@@ -13,7 +13,7 @@ import uuid
 class myfile:
     
     def __init__(self):
-        self.base_path = os.path.dirname(__file__) + "/../uploads/"
+        self.base_path = os.path.dirname(__file__) + "/uploads/"
 
     def write_(self, type, filename, data):
         path = self.filename2path(filename)

@@ -17,17 +17,18 @@ class metafile :
             self.dateupload = int(time.time())
         
     def set_expiration(self,expiration):
-        if(expiration == "hour"):
+        if expiration == "hour" :
             self.expiration = self.dateupload + 3600
-        if(expiration == "day"):
+        if expiration == "day" :
             self.expiration = self.dateupload + 864000
-        if(expiration == "week"):
+        if expiration == "week" :
             self.expiration = self.dateupload + 6048000
-        if(expiration == "month"):
+        if expiration == "month" :
             self.expiration = self.dateupload + 25920000
-        if(expiration == "year"):
+        if expiration == "year" :
             self.expiration = self.dateupload + 31536000
-        if(expiration == "never"):
+        print(self.expiration)
+        if self.expiration is None :
             self.expiration = -1
             
     def set_burnafterreading(self,burnafterreading):

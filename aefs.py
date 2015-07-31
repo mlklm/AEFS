@@ -3,16 +3,14 @@ __date__ = "$28 juil. 2015 11:35:31$"
 __HOST__ = '0.0.0.0'
 __PORT__ = 1977
 
-from metafile import metafile
-from myfile import myfile
-
-from urllib.parse import urlparse
-
 import cgi
 import codecs
 import http.server
+from metafile import metafile
 import mimetypes
+from myfile import myfile
 import re
+from urllib.parse import urlparse
 
 
 class AEFS(http.server.BaseHTTPRequestHandler):
@@ -28,10 +26,10 @@ class AEFS(http.server.BaseHTTPRequestHandler):
         # retrieve post data
         form = cgi.FieldStorage(fp=self.rfile, headers=self.headers, environ={'REQUEST_METHOD':'POST'})
         filesize = len(form['fileToUpload'].value)
-        if filesize > 0 :
+        amime = mimetypes.guess_all_extensions(form['fileToUpload'].headers['Content-Type'])
+        if filesize > 0 and len(amime) > 0:
             ofile = myfile()
             # create encode file
-            amime = mimetypes.guess_all_extensions(form['fileToUpload'].headers['Content-Type'])
             ofile.set_mime(amime[0])
             data = ofile.encrypt(form['passphrase'].value, form['fileToUpload'].value)
             fname = ofile.get_file_name()
@@ -42,10 +40,11 @@ class AEFS(http.server.BaseHTTPRequestHandler):
                 mf.set_burnafterreading(1)
             if 'expiration' in form:    
                 mf.set_expiration(form['expiration'].value)
+                
             ofile.write_("a", fname + ".meta", mf.get_json_metafile())
             # send response
             data = {}
-            data['url'] = self.make_url( ofile.get_file_name(),  ofile.get_file_key())
+            data['url'] = self.make_url(ofile.get_file_name(), ofile.get_file_key())
             self.send_html(self.content(data))
         else:
             data = {}
@@ -55,7 +54,7 @@ class AEFS(http.server.BaseHTTPRequestHandler):
             self.send_html(content)
 
 
-    def content(self, data = {}):
+    def content(self, data={}):
         self.isBin = False
         # get url & params
         request = urlparse(self.path);
@@ -85,7 +84,7 @@ class AEFS(http.server.BaseHTTPRequestHandler):
                 else: 
                     # decript
                     bin = ofile.read_("rb", filename)
-                    content = ofile.decrypt(pp,key, bin)
+                    content = ofile.decrypt(pp, key, bin)
                     self.isBin = True
 
                 if  mf.is_burafterreadingable():
@@ -149,7 +148,7 @@ if __name__ == '__main__':
     try:
         server = http.server.HTTPServer((__HOST__, __PORT__), AEFS)
         print('Started http server')
-        print('Listen on ',__HOST__,':',__PORT__)
+        print('Listen on ', __HOST__, ':', __PORT__)
         server.serve_forever()
     except KeyboardInterrupt:
         print('^C received, shutting down server')
