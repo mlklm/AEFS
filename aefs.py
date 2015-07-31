@@ -1,6 +1,7 @@
 __author__ = "mlklm"
 __date__ = "$28 juil. 2015 11:35:31$"
 __HOST__ = '0.0.0.0'
+__DOMAIN__ = "mlklm.net"
 __PORT__ = 1977
 __AEFS__ = "AEFS"
 __VERBOSE__ = "AEFS - "
@@ -151,7 +152,7 @@ class AEFS(http.server.BaseHTTPRequestHandler):
     def make_url(self, fname, key):
         clt_adress, inport = self.client_address
         port = str(__PORT__)
-        return "http://" + clt_adress + ":" + port + "/dl/" + fname + "?" + key + "&"
+        return "http://" + __DOMAIN__ + ":" + port + "/dl/" + fname + "?" + key + "&"
     
     def log_request(self, code='-', size='-'):
         return
