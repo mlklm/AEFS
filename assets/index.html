@@ -10,23 +10,28 @@
         <div class="header">
             <img width="300" src="../img/mlklm-monsecure.png" />
             <h1>Encrypt file sharing</h1>
+            <br/>
+            <h5><a href='roadmap.html'>Roadmap</a></h5>
+            <h5><a href='README.txt'>Readme</a></h5>
+            <h5><a href='LICENSE.txt'>License</a></h5>
         </div>
         <div class="main">
             <div class="wrapper">
-                <form action="share.html" method="post" enctype="multipart/form-data">
-                    Select a file to upload: <br/>
+                <form id="upload-from" onsubmit="return validform()" action="share.html" method="post" enctype="multipart/form-data">
+                    <h3>Select a file to upload:</h3><br/>
                     <input type="file" name="fileToUpload" id="fileToUpload">
                     <hr class="dot">
                     <div>
-                        Set the default duration (1 month) ?<br/><br/>
+                        <h3>Set the default duration (1 month) ?</h3><br/>
                         <input type="checkbox" id="burnafterreading" name="burnafterreading" />
                         <label for="burnafterreading">Burn after reading</label>
                         <br/><b>OR</b><br/>
                         <select id="pasteExpiration" name="expiration">
+                            <option value="">--</option>
                             <option value="hour">1 hour</option>
                             <option value="day">1 day</option>
                             <option value="week">1 week</option>
-                            <option value="month" selected="selected">1 month</option>
+                            <option value="month">1 month</option>
                             <option value="year">1 year</option>
                             <option value="never">Never</option>
                         </select>
@@ -34,7 +39,7 @@
                     </div>
                     <hr class="dot">
                     <div class="passblock">
-                        May be you want add a passphrases ?<br/>
+                        <h3>May be you want add a passphrases ?</h3><br/>
                         <i>Keep blank if you don't want to use a passphrase</i><br><br/>
                         <input type="password" name="passphrase" id="passphrase" placeholder="Passsphrases"><br/>
                         <input type="password" name="passphrase2" id="passphrase2" placeholder="Confirm"><br/>
@@ -48,5 +53,6 @@
         <div class="footer">
             <p> <a target="_blank" href="http://mlklm.net/">mlklm.net</a> | This is free and unencumbered software released into the <a target="_blank" href="http://unlicense.org/">public domain</a>.</p>
         </div>
+        <script src="../js/aefs.js" type="text/javascript"></script>
     </body>
 </html>

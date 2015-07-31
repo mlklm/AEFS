@@ -1,8 +1,15 @@
 __author__ = "mlklm"
 __date__ = "$30 juil. 2015 09:59:26$"
 
+__NS__ = "AEFS"
+
 import os
+import random
 import re
+from simplecrypt import decrypt
+from simplecrypt import encrypt
+import uuid
+
 class myfile:
     
     def __init__(self):
@@ -32,4 +39,32 @@ class myfile:
     def check_dir(self, dirname):
         if not os.path.exists(dirname):
             os.makedirs(dirname)
+    
+    def set_mime(self, mime):
+        self.mime = mime
+    
+    def generate_name(self):
+        fid = str(uuid.uuid4())
+        if len(self.mime) > 0: 
+            self.name = fid + self.mime
+        else:
+            self.name = fid + ".txt"
+        
+        return self.name
+
+    def encrypt(self, pp, data):
+        self.generate_name()
+        self.key = ''.join([random.choice('0123456789ABCDEF') for x in range(16)])
+        data = encrypt((self.key + "&" + __NS__ + "&" + pp), data)
+        return data
+      
+    def decrypt(self, pp, key, data):
+        data = decrypt((key + "&" + __NS__ + "&" + pp), data)
+        return data    
+        
+    def get_file_name(self):
+        return self.name
+    
+    def get_file_key(self):
+        return self.key
     

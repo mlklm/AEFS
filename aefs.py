@@ -5,24 +5,20 @@ __PORT__ = 1977
 
 from metafile import metafile
 from myfile import myfile
-from simplecrypt import decrypt
-from simplecrypt import encrypt
+
 from urllib.parse import urlparse
+
 import cgi
 import codecs
 import http.server
-import json
 import mimetypes
-import random
 import re
-import time
-import uuid
 
-class MyHandler(http.server.BaseHTTPRequestHandler):
+
+class AEFS(http.server.BaseHTTPRequestHandler):
     
     def do_GET(self):
-        self.isBin = False
-        content = self.content([])
+        content = self.content()
         if self.isBin is True:
             self.send_bin(content)
         else: 
@@ -30,41 +26,37 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
 
     def do_POST(self):
         # retrieve post data
-        form = cgi.FieldStorage(fp=self.rfile, headers=self.headers, environ={'REQUEST_METHOD':'POST', 'CONTENT_TYPE':self.headers['Content-Type']})
-        # create file name
-        amime = mimetypes.guess_all_extensions(form['fileToUpload'].headers['Content-Type'])
-        fid = str(uuid.uuid4())
-        # check file mime
-        if len(amime) > 0: 
-            fname = fid + amime[0]
+        form = cgi.FieldStorage(fp=self.rfile, headers=self.headers, environ={'REQUEST_METHOD':'POST'})
+        filesize = len(form['fileToUpload'].value)
+        if filesize > 0 :
+            ofile = myfile()
+            # create encode file
+            amime = mimetypes.guess_all_extensions(form['fileToUpload'].headers['Content-Type'])
+            ofile.set_mime(amime[0])
+            data = ofile.encrypt(form['passphrase'].value, form['fileToUpload'].value)
+            fname = ofile.get_file_name()
+            ofile.write_("ab", fname, data)
+            # create encode filemeta
+            mf = metafile()
+            if 'burnafterreading' in form:
+                mf.set_burnafterreading(1)
+            if 'expiration' in form:    
+                mf.set_expiration(form['expiration'].value)
+            ofile.write_("a", fname + ".meta", mf.get_json_metafile())
+            # send response
+            data = {}
+            data['url'] = self.make_url( ofile.get_file_name(),  ofile.get_file_key())
+            self.send_html(self.content(data))
         else:
-            fname = fid + ".txt"
-            
-        # filemeta
-        dfilemeta = {}
-        mf = metafile()
-        if 'burnafterreading' in form:
-            mf.set_burnafterreading(1)
-        dfilemeta["uploaddate"] = int(time.time())    
-        if 'expiration' in form:    
-            mf.set_expiration(form['expiration'].value)
-        
-        # make keys
-        key = ''.join([random.choice('0123456789ABCDEF') for x in range(16)])
-        pp = form['passphrase'].value
-        # bytes
-        file = encrypt((key + pp), form['fileToUpload'].value)
-        # write file
-        ofile = myfile()
-        ofile.write_("a", fname + ".meta", mf.get_json_metafile())
-        ofile.write_("ab", fname, file)
-        # send response
-        data = {}
-        data['uri'] = self.make_url(fname, key)
-        self.send_html(self.content(data))
+            data = {}
+            data['error_msg'] = "File empty !!"
+            content = self.load_assets("error.html")
+            content = content.replace('<%error_msg%>', data["error_msg"])
+            self.send_html(content)
 
 
-    def content(self, data):
+    def content(self, data = {}):
+        self.isBin = False
         # get url & params
         request = urlparse(self.path);
         path = request.path
@@ -73,22 +65,18 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
             path = "index"
             
         # if download page
-        dluri = re.split("/dl/", path)
-
-        if len(dluri) >= 2:
-            filename = dluri[1]
-            # split prams
+        dlurl = re.split("/dl/", path)
+        if len(dlurl) >= 2:
+            filename = dlurl[1]
             qs = re.split('&', request.query)
-            # unique key
-            key = qs[0] if len(qs) >= 1 else ""
-            # passphrase
-            pp = qs[1] if len(qs) >= 2 else ""
+            key = qs[0] if len(qs) >= 1 else ""# unique key
+            pp = qs[1] if len(qs) >= 2 else ""# passphrase
             try:
                 # open file
                 ofile  = myfile()
                 meta = ofile.read_("r", filename + ".meta")
                 mf = metafile(meta)
-                
+
                 if mf.is_date_valid():
                     content = self.load_assets("error.html")
                     content = content.read() 
@@ -97,7 +85,7 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
                 else: 
                     # decript
                     bin = ofile.read_("rb", filename)
-                    content = decrypt((key + pp), bin)
+                    content = ofile.decrypt(pp,key, bin)
                     self.isBin = True
 
                 if  mf.is_burafterreadingable():
@@ -105,6 +93,7 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
                     ofile.delete(filename + ".meta")
 
             except:
+                data["error_msg"] = "File unavailable !!"
                 content = self.load_assets("error.html")
         else:
             try:
@@ -118,11 +107,15 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
                     else:
                         content = self.load_assets(ext[0] + "." + ext[1])
             except:
-                content = self.load_assets("404.html")
+                data["error_msg"] = "Page  unavailable !!"
+                content = self.load_assets("error.html")
+                
+        if len(data) and self.isBin is False:
+            if "url" in data:
+                content = content.replace('<%url%>', data["url"])
 
-            if len(data):
-                if "uri" in data:
-                    content = content.replace('<%url%>', data["uri"])
+            if "error_msg" in data:    
+                content = content.replace('<%error_msg%>', data["error_msg"])
           
         return content
         
@@ -154,7 +147,7 @@ class MyHandler(http.server.BaseHTTPRequestHandler):
         
 if __name__ == '__main__':
     try:
-        server = http.server.HTTPServer((__HOST__, __PORT__), MyHandler)
+        server = http.server.HTTPServer((__HOST__, __PORT__), AEFS)
         print('Started http server')
         print('Listen on ',__HOST__,':',__PORT__)
         server.serve_forever()

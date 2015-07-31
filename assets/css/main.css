@@ -8,13 +8,25 @@ html,body{
     overflow: hidden
 }
 a{
-    color: red;
+    color: #a90d0d;
 }
-hr{
+hr.dot{
     margin: 50px 45% 50px 45%;
 }
 input{
     margin:5px;
+    background: #a90d0d;
+    color : black;
+    border: black;
+}
+input[type="file"]{
+    margin:5px;
+    background: inherit;
+    color : inherit;
+    border: inherit;
+}
+input[type="submit"]{
+    font-size: 40px;
 }
 .main{
     height: auto !important;
@@ -43,4 +55,21 @@ input{
 }
 .footer p{
     margin-left: 5px
+}
+.border-top{
+    margin-top:150px
+}
+.roadmap{
+    text-align: left;
+}
+.roadmap .done{
+    color : #a90d0d
+}
+.share-url{
+    background: #a90d0d;
+    color : black;
+}
+.error{
+    font-weight: bold;
+    color : #a90d0d;
 }
