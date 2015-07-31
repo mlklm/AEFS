@@ -53,7 +53,6 @@ class myfile:
         return self.name
 
     def encrypt(self, pp, data):
-        self.generate_name()
         self.key = ''.join([random.choice('0123456789ABCDEF') for x in range(16)])
         data = encrypt((self.key + "&" + __NS__ + "&" + pp), data)
         return data
