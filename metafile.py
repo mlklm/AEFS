@@ -27,7 +27,6 @@ class metafile :
             self.expiration = self.dateupload + 25920000
         if expiration == "year" :
             self.expiration = self.dateupload + 31536000
-        print(self.expiration)
         if self.expiration is None :
             self.expiration = -1
             

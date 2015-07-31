@@ -2,7 +2,8 @@ __author__ = "mlklm"
 __date__ = "$28 juil. 2015 11:35:31$"
 __HOST__ = '0.0.0.0'
 __PORT__ = 1977
-
+__AEFS__ = "AEFS"
+__VERBOSE__ = "AEFS - "
 import cgi
 import codecs
 import http.server
@@ -31,8 +32,10 @@ class AEFS(http.server.BaseHTTPRequestHandler):
             ofile = myfile()
             # create encode file
             ofile.set_mime(amime[0])
+            fname = ofile.generate_name()
+            print(__VERBOSE__ + "Encrypt " + fname + " ...")
             data = ofile.encrypt(form['passphrase'].value, form['fileToUpload'].value)
-            fname = ofile.get_file_name()
+            print(__VERBOSE__ + fname + " encrypted !")
             ofile.write_("ab", fname, data)
             # create encode filemeta
             mf = metafile()
@@ -83,8 +86,10 @@ class AEFS(http.server.BaseHTTPRequestHandler):
                     ofile.delete(filename + ".meta")
                 else: 
                     # decript
+                    print(__VERBOSE__ + "Decrypt " + filename + " ...")
                     bin = ofile.read_("rb", filename)
                     content = ofile.decrypt(pp, key, bin)
+                    print(__VERBOSE__ + filename + "Decrypted !!")
                     self.isBin = True
 
                 if  mf.is_burafterreadingable():
@@ -143,13 +148,20 @@ class AEFS(http.server.BaseHTTPRequestHandler):
         clt_adress, inport = self.client_address
         port = str(__PORT__)
         return "http://" + clt_adress + ":" + port + "/dl/" + fname + "?" + key + "&"
+    
+    def log_request(self, code='-', size='-'):
+        return
+    def log_error(self, format, * args):
+        return
+    def log_message(self, format, * args):
+        return
         
 if __name__ == '__main__':
     try:
         server = http.server.HTTPServer((__HOST__, __PORT__), AEFS)
-        print('Started http server')
-        print('Listen on ', __HOST__, ':', __PORT__)
+        print(__VERBOSE__ + 'Started server ...')
+        print(__VERBOSE__ + 'Listen on ' + str(__HOST__) + ':' + str(__PORT__))
         server.serve_forever()
     except KeyboardInterrupt:
-        print('^C received, shutting down server')
+        print(__VERBOSE__ + '^C received, shutting down server')
         server.socket.close()
