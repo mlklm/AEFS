@@ -22,10 +22,12 @@ Develop with/for [Python3.4](https://www.python.org/download/releases/3.4.0/)
 You need to use so command :
 
 ```sh
+$ aptitude install python3 python3-pip git openssl
+$ pip3-2 install simple-crypt
+$ openssl req -new -x509 -keyout /path/to/certificates.pem -out /path/to/certificates.pem -days 365 -nodes
 $ git clone https://github.com/mlklm/AEFS.git
 $ cd AEFS/
 $ mkdir uploads
-$ cd src/
 $ python3 aefs.py
 ```
 

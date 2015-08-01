@@ -1,26 +1,35 @@
-__author__ = "mlklm"
-__date__ = "$28 juil. 2015 11:35:31$"
+# Configs
 __HOST__ = '0.0.0.0'
-__DOMAIN__ = "mlklm.net"
 __PORT__ = 1977
-__AEFS__ = "AEFS"
+__THREADS__ = 10
+__CERTS_FOLDER__ = "/etc/ssl/localcerts/"
 __VERBOSE__ = "AEFS - "
-__THREAD__ = 10
+__DOMAIN__ = "mlklm.net"
+
+import base64
 import cgi
 import codecs
-import http.server
+from http.server import BaseHTTPRequestHandler
+from http.server import HTTPServer
 from metafile import metafile
 import mimetypes
 from myfile import myfile
 from queue import Queue
 import re
+import ssl
 import threading
-import time
 from urllib.parse import urlparse
 
-
-class AEFS(http.server.BaseHTTPRequestHandler):
-    
+# AEFS handler
+class AEFS(BaseHTTPRequestHandler):
+     
+    def handle(self):
+        #try:
+            BaseHTTPRequestHandler.handle(self);
+        #except:
+           # print("handler failed")
+           # self.forceSSL()
+            
     def do_GET(self):
         content = self.content()
         if self.isBin is True:
@@ -30,7 +39,7 @@ class AEFS(http.server.BaseHTTPRequestHandler):
 
     def do_POST(self):
         # retrieve post data
-        form = cgi.FieldStorage(fp=self.rfile, headers=self.headers, environ={'REQUEST_METHOD':'POST'})
+        form = cgi.FieldStorage(fp=self.rfile, headers=self.headers, enviheron={'REQUEST_METHOD':'POST'})
         filesize = len(form['fileToUpload'].value)
         amime = mimetypes.guess_all_extensions(form['fileToUpload'].headers['Content-Type'])
         if filesize > 0 and len(amime) > 0:
@@ -149,8 +158,14 @@ class AEFS(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(bin) 
     
+    def forceSSL(self):
+        self.requestline = ""
+        self.request_version = "HTTP/1.0"
+        self.send_response(301)
+        self.send_header('Location', 'https://' + str(__DOMAIN__) + ":" + str(__PORT__))
+        self.end_headers()
+        
     def make_url(self, fname, key):
-        clt_adress, inport = self.client_address
         port = str(__PORT__)
         return "http://" + __DOMAIN__ + ":" + port + "/dl/" + fname + "?" + key + "&"
     
@@ -160,39 +175,30 @@ class AEFS(http.server.BaseHTTPRequestHandler):
         return
     def log_message(self, format, * args):
         return
-        
-if __name__ == '__main__':
-    try:
-        server = http.server.HTTPServer((__HOST__, __PORT__), AEFS)
-        print(__VERBOSE__ + 'Started server ...')
-        print(__VERBOSE__ + 'Listen on ' + str(__HOST__) + ':' + str(__PORT__))
+      
+# AEFS HTTPServer
+try:
+    server = HTTPServer((__HOST__, __PORT__), AEFS)
+    server.socket = ssl.wrap_socket(server.socket, certfile=__CERTS_FOLDER__+'aefs.pem', server_side=True)
+    print(__VERBOSE__ + 'Started server ...')
+    print(__VERBOSE__ + 'Listen on ' + str(__HOST__) + ':' + str(__PORT__))
+    lock = threading.Lock()
+    # The worker thread processes server_forever()
+    def worker():
+        while True:
+            t = q.get()
+            print(__VERBOSE__ + 'Start web instance on ' + t.getName())
+            server.serve_forever()
+            print('failed')
+    # Create the queue/thread pool.
+    q = Queue()
+    for i in range(__THREADS__):
+        t = threading.Thread(target=worker)
+        t.daemon = True  
+        t.start()
+        q.put(t)
+    q.join() 
 
-
-        # lock to serialize console output
-        lock = threading.Lock()
-
-        # The worker thread pulls an item from the queue and processes it
-        def worker():
-            while True:
-                item = q.get()
-                print(__VERBOSE__+'Startserve_forever')
-                server.serve_forever()
-                #q.task_done()
-
-        # Create the queue and thread pool.
-        q = Queue()
-        for i in range(__THREAD__):
-            t = threading.Thread(target=worker)
-            print(__VERBOSE__+'Start ' + t.getName())
-            t.daemon = True  # thread dies when main thread (only non-daemon thread) exits.
-            t.start()
-
-        # stuff work items on the queue (in this case, just a number).
-        for item in range(__THREAD__):
-            q.put(item)
-
-        q.join()       # block until all tasks are done
-
-    except KeyboardInterrupt:
-        print(__VERBOSE__ + '^C received, shutting down server')
-        server.socket.close()
+except KeyboardInterrupt:
+    print(__VERBOSE__ + '^C received, shutting down server')
+    server.socket.close()
