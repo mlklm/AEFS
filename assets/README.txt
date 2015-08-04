@@ -24,10 +24,10 @@ You need to use so command :
 ```sh
 $ aptitude install python3 python3-pip git openssl
 $ pip3-2 install simple-crypt
+$ mkdir /etc/ssl/localcerts
 $ openssl req -new -x509 -keyout /path/to/certificates.pem -out /path/to/certificates.pem -days 365 -nodes
 $ git clone https://github.com/mlklm/AEFS.git
 $ cd AEFS/
-$ mkdir uploads
 $ python3 aefs.py
 ```
 

@@ -1,5 +1,5 @@
 __author__ = "mlklm"
-__date__ = "$29 juil. 2015 19:49:47$"
+__date__ = "$4 août 2015 12:48:12$"
 
 from setuptools import setup, find_packages
 
@@ -14,12 +14,12 @@ setup (
        # Fill in these to make your Egg ready for upload to
        # PyPI
        author='mlklm',
-       author_email='',
+       author_email='mail@mail.com',
 
-       summary='Just another Python package for the cheese shop',
+       summary='Encrypt file sharing',
        url='',
-       license='',
-       long_description='Long description of the package',
+       license='The Unlicense',
+       long_description='AEFS is an encrypt/decrypt file sharing python apps.',
 
        # could also include long_description, download_url, classifiers, etc.
 

@@ -1,12 +1,3 @@
-# Configs
-__HOST__ = '0.0.0.0'
-__PORT__ = 1977
-__THREADS__ = 10
-__CERTS_FOLDER__ = "/etc/ssl/localcerts/"
-__VERBOSE__ = "AEFS - "
-__DOMAIN__ = "mlklm.net"
-
-import base64
 import cgi
 import codecs
 from http.server import BaseHTTPRequestHandler
@@ -14,21 +5,24 @@ from http.server import HTTPServer
 from metafile import metafile
 import mimetypes
 from myfile import myfile
-from queue import Queue
 import re
+import select
+import socket
 import ssl
 import threading
 from urllib.parse import urlparse
-
+# Configs
+__HOST__ = '0.0.0.0'
+__BASE_PORT__ = "1818"
+__FRONTEND_PORT__ = int(__BASE_PORT__)
+__BACKEND_PORT_SSL__ = int(__BASE_PORT__ + "1")
+__BACKEND_PORT_HTTP__ = int(__BASE_PORT__ + "2")
+__CERTS_FOLDER__ = "/etc/ssl/localcerts/"
+__VERBOSE__ = "AEFS - "
+__DOMAIN__ = "mlklm.net"
+__CERTS_FOLDER__ = "/etc/ssl/localcerts/"
 # AEFS handler
-class AEFS(BaseHTTPRequestHandler):
-     
-    def handle(self):
-        #try:
-            BaseHTTPRequestHandler.handle(self);
-        #except:
-           # print("handler failed")
-           # self.forceSSL()
+class AEFSHandler(BaseHTTPRequestHandler):
             
     def do_GET(self):
         content = self.content()
@@ -39,7 +33,7 @@ class AEFS(BaseHTTPRequestHandler):
 
     def do_POST(self):
         # retrieve post data
-        form = cgi.FieldStorage(fp=self.rfile, headers=self.headers, enviheron={'REQUEST_METHOD':'POST'})
+        form = cgi.FieldStorage(fp=self.rfile, headers=self.headers, environ={'REQUEST_METHOD':'POST'})
         filesize = len(form['fileToUpload'].value)
         amime = mimetypes.guess_all_extensions(form['fileToUpload'].headers['Content-Type'])
         if filesize > 0 and len(amime) > 0:
@@ -157,17 +151,9 @@ class AEFS(BaseHTTPRequestHandler):
         self.send_response(200)
         self.end_headers()
         self.wfile.write(bin) 
-    
-    def forceSSL(self):
-        self.requestline = ""
-        self.request_version = "HTTP/1.0"
-        self.send_response(301)
-        self.send_header('Location', 'https://' + str(__DOMAIN__) + ":" + str(__PORT__))
-        self.end_headers()
         
     def make_url(self, fname, key):
-        port = str(__PORT__)
-        return "http://" + __DOMAIN__ + ":" + port + "/dl/" + fname + "?" + key + "&"
+        return "https://" + __DOMAIN__ + ":" + __BASE_PORT__ + "/dl/" + fname + "?" + key + "&"
     
     def log_request(self, code='-', size='-'):
         return
@@ -175,30 +161,59 @@ class AEFS(BaseHTTPRequestHandler):
         return
     def log_message(self, format, * args):
         return
-      
-# AEFS HTTPServer
-try:
-    server = HTTPServer((__HOST__, __PORT__), AEFS)
-    server.socket = ssl.wrap_socket(server.socket, certfile=__CERTS_FOLDER__+'aefs.pem', server_side=True)
-    print(__VERBOSE__ + 'Started server ...')
-    print(__VERBOSE__ + 'Listen on ' + str(__HOST__) + ':' + str(__PORT__))
-    lock = threading.Lock()
-    # The worker thread processes server_forever()
-    def worker():
-        while True:
-            t = q.get()
-            print(__VERBOSE__ + 'Start web instance on ' + t.getName())
-            server.serve_forever()
-            print('failed')
-    # Create the queue/thread pool.
-    q = Queue()
-    for i in range(__THREADS__):
-        t = threading.Thread(target=worker)
-        t.daemon = True  
-        t.start()
-        q.put(t)
-    q.join() 
 
+httpd_ssl = HTTPServer((__HOST__, __BACKEND_PORT_SSL__), AEFSHandler)
+httpd_ssl.socket = ssl.wrap_socket (httpd_ssl.socket, certfile=__CERTS_FOLDER__ + 'aefs.pem', server_side=True)
+httpd_direct = HTTPServer((__HOST__, __BACKEND_PORT_HTTP__), AEFSHandler)
+
+def serve_forever(http_server):
+    while True:
+        http_server.serve_forever()
+
+def dispatcher(sock, addr):
+    # check ssl
+    https = sock.recv(1)
+    if https == bytes(b'\x16'):
+        port = __BACKEND_PORT_SSL__
+    else:
+        port = __BACKEND_PORT_HTTP__
+
+    data = https + sock.recv(1048576)    
+    other_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    other_sock.connect((__HOST__, port))
+    other_sock.sendall(data)
+    inp = [sock, other_sock]
+    
+    try:
+        while True:
+            read, write, error = select.select(inp, [], [])
+            for s in read:
+                o_s = inp[1] if inp[0] == s else inp[0]
+                buf = s.recv(1048576)
+                if len(buf) > 0:
+                    o_s.send(buf)
+                else:
+                    raise RuntimeError("socket connection broken")
+    except:
+        pass
+    
+    finally: 
+        sock.close()
+        other_sock.close()
+   
+try:
+    print('Started server ...')
+    print('Listen on ' + str(__HOST__) + ':' + str(__FRONTEND_PORT__))
+    threading.Thread(target=serve_forever, args=(httpd_ssl,)).start()
+    threading.Thread(target=serve_forever, args=(httpd_direct,)).start()
+
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.bind((__HOST__, __FRONTEND_PORT__))
+    sock.listen(10)
+    while True:
+        main_socket, addr = sock.accept()
+        threading.Thread(target=dispatcher, args=(main_socket, addr)).start()
+    
 except KeyboardInterrupt:
-    print(__VERBOSE__ + '^C received, shutting down server')
-    server.socket.close()
+    print('^C received, shutting down server')
+    server.socket.close()    
